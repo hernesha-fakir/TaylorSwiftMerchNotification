@@ -1,0 +1,26 @@
+includes:
+    - vendor/nunomaduro/larastan/extension.neon
+
+parameters:
+    paths:
+        - app/
+        - database/
+
+    # Analysis level (0-10, higher is stricter)
+    level: 5
+
+    # Ignore common Laravel patterns that PHPStan doesn't understand
+    ignoreErrors:
+        - '#Unsafe usage of new static#'
+        - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Builder#'
+        - '#Access to an undefined property Illuminate\\Database\\Eloquent\\Model#'
+
+    # Exclude paths that shouldn't be analyzed
+    excludePaths:
+        - bootstrap/cache/
+        - storage/
+        - vendor/
+        - node_modules/
+
+    # Laravel specific settings
+    reportUnmatchedIgnoredErrors: false

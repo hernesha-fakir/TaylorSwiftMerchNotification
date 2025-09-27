@@ -23,7 +23,7 @@ class CheckAvailabilityForProduct
         $previousAvailability = $previousCheck ? $previousCheck->is_available : false;
         $previousPrice = $previousCheck ? $previousCheck->price : null;
 
-        $availabilityCheck = new AvailabilityCheck();
+        $availabilityCheck = new AvailabilityCheck;
         $availabilityCheck->product_id = $product->id;
         $availabilityCheck->is_available = $data['is_available'];
         $availabilityCheck->price = $data['price'];
@@ -35,7 +35,7 @@ class CheckAvailabilityForProduct
 
     private function checkAndNotifyStockAvailable(Product $product, bool $previousAvailability, bool $currentAvailability)
     {
-        if (!$previousAvailability && $currentAvailability) {
+        if (! $previousAvailability && $currentAvailability) {
             $users = User::all();
             $productUrl = $product->url;
 
@@ -69,7 +69,7 @@ class CheckAvailabilityForProduct
 
         return [
             'is_available' => $variantIsAvailable,
-            'price' => $price
+            'price' => $price,
         ];
     }
 }

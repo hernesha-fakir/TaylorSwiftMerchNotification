@@ -6,7 +6,6 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\ViewField;
 use Filament\Schemas\Schema;
 
-
 class ProductForm
 {
     public static function configure(Schema $schema): Schema

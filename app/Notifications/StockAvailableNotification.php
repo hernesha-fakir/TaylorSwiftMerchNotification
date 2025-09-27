@@ -38,7 +38,7 @@ class StockAvailableNotification extends Notification implements ShouldQueue
             ->subject('Taylor Swift Merch Back in Stock!')
             ->greeting('Great news!')
             ->line("The item '{$this->product->name}' is now back in stock!")
-            ->line("Price: $" . number_format($this->product->price, 2))
+            ->line('Price: $'.number_format((float) $this->product->price, 2))
             ->action('Buy Now', $this->productUrl)
             ->line('Don\'t wait - Taylor Swift merch sells out fast!');
     }
@@ -55,7 +55,7 @@ class StockAvailableNotification extends Notification implements ShouldQueue
             'product_name' => $this->product->name,
             'product_price' => $this->product->price,
             'product_url' => $this->productUrl,
-            'message' => "The item '{$this->product->name}' is now back in stock!"
+            'message' => "The item '{$this->product->name}' is now back in stock!",
         ];
     }
 }

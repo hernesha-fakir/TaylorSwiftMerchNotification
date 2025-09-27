@@ -11,7 +11,7 @@ class CreateProduct
 
     public function handle($url, $productData, $variantId)
     {
-        $product = new Product();
+        $product = new Product;
 
         $product->url = $url;
 
@@ -22,7 +22,7 @@ class CreateProduct
         $product->product_variant_name = $selectedVariant['public_title'];
         $product->product_variant_id = $selectedVariant['id'];
         $product->price = $selectedVariant['price'] / 100;
-        $product->image_url = 'https://storeau.taylorswift.com/cdn/shop/' . $productData['product_data']['featuredImage'];
+        $product->image_url = 'https://storeau.taylorswift.com/cdn/shop/'.$productData['product_data']['featuredImage'];
 
         $product->save();
 

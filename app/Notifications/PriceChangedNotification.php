@@ -43,9 +43,9 @@ class PriceChangedNotification extends Notification implements ShouldQueue
             ->subject("Taylor Swift Merch Price Change - {$this->product->name}")
             ->greeting('Price Alert!')
             ->line("The price for '{$this->product->name}' has {$priceChange}! {$changeColor}")
-            ->line("Old Price: $" . number_format($this->oldPrice, 2))
-            ->line("New Price: $" . number_format($this->newPrice, 2))
-            ->line("Price Difference: $" . number_format(abs($this->newPrice - $this->oldPrice), 2))
+            ->line('Old Price: $'.number_format($this->oldPrice, 2))
+            ->line('New Price: $'.number_format($this->newPrice, 2))
+            ->line('Price Difference: $'.number_format(abs($this->newPrice - $this->oldPrice), 2))
             ->action('View Product', $this->productUrl)
             ->line('Stay on top of Taylor Swift merch pricing!');
     }
@@ -65,7 +65,7 @@ class PriceChangedNotification extends Notification implements ShouldQueue
             'new_price' => $this->newPrice,
             'price_difference' => abs($this->newPrice - $this->oldPrice),
             'price_change_type' => $this->newPrice > $this->oldPrice ? 'increase' : 'decrease',
-            'message' => "Price " . ($this->newPrice > $this->oldPrice ? 'increased' : 'decreased') . " from $" . number_format($this->oldPrice, 2) . " to $" . number_format($this->newPrice, 2)
+            'message' => 'Price '.($this->newPrice > $this->oldPrice ? 'increased' : 'decreased').' from $'.number_format($this->oldPrice, 2).' to $'.number_format($this->newPrice, 2),
         ];
     }
 }

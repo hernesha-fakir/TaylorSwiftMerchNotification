@@ -2,11 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Product extends Model
 {
@@ -24,7 +22,7 @@ class Product extends Model
 
     protected $casts = [
         'price' => 'decimal:2',
-        'is_tracked' => 'boolean'
+        'is_tracked' => 'boolean',
     ];
 
     public function availabilityChecks(): HasMany
@@ -32,11 +30,11 @@ class Product extends Model
         return $this->hasMany(AvailabilityCheck::class);
     }
 
-     protected function variantUrl(): Attribute
+    protected function variantUrl(): Attribute
     {
         return Attribute::make(
             get: function () {
-                return $this->url . '?variant=' . $this->product_variant_id;
+                return $this->url.'?variant='.$this->product_variant_id;
             },
         );
     }

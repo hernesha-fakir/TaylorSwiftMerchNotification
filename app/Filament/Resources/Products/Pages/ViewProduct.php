@@ -5,9 +5,9 @@ namespace App\Filament\Resources\Products\Pages;
 use App\Actions\AvailabilityCheck\CheckAvailabilityForProduct;
 use App\Filament\Resources\Products\ProductResource;
 use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Support\Icons\Heroicon;
-use Filament\Notifications\Notification;
 
 class ViewProduct extends ViewRecord
 {

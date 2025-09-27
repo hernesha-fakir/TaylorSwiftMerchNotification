@@ -7,8 +7,8 @@ use App\Filament\Resources\Products\ProductResource;
 use App\Models\Product;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Hidden;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Utilities\Get;
@@ -38,6 +38,7 @@ class ListProducts extends ListRecords
                                 $set('variant_options', []);
                                 $set('selected_variant', null);
                                 $set('has_url', false);
+
                                 return;
                             }
 
@@ -56,7 +57,7 @@ class ListProducts extends ListRecords
                                     }
                                     $set('variant_options', $options);
                                     $set('selected_variant', array_key_first($options));
-                                } else if (count($variants) === 1) {
+                                } elseif (count($variants) === 1) {
                                     $set('variant_options', []);
                                     $set('selected_variant', $variants[0]['id']);
                                     $set('variant_name', $variants[0]['public_title']);
@@ -74,20 +75,19 @@ class ListProducts extends ListRecords
                     Hidden::make('has_url')
                         ->default(false),
                     Hidden::make('selected_variant')
-                    ->visible(fn (Get $get): bool => empty($get('variant_options'))),
+                        ->visible(fn (Get $get): bool => empty($get('variant_options'))),
                     Select::make('selected_variant')
                         ->label('Select Variant')
                         ->options(fn (Get $get): array => $get('variant_options') ?? [])
                         ->disabled(fn (Get $get): bool => empty($get('variant_options')))
-                        ->helperText(fn (Get $get) =>
-                            !$get('has_url')
+                        ->helperText(fn (Get $get) => ! $get('has_url')
                                 ? null
                                 : (empty($get('variant_options'))
                                     ? '🔄 Loading variants...'
                                     : 'Select a variant to import'
                                 )
                         )
-                        ->required(fn (Get $get): bool => !empty($get('variant_options')))
+                        ->required(fn (Get $get): bool => ! empty($get('variant_options')))
                         ->live()
                         ->afterStateUpdated(function ($state, Set $set, Get $get) {
                             $options = $get('variant_options') ?? [];
@@ -109,13 +109,13 @@ class ListProducts extends ListRecords
                         // Check if this product/variant combination already exists
                         $existingProduct = Product::where('external_product_id', $productData['product']['id'])->where('product_variant_id', $variantId)->first();
 
-
                         if ($existingProduct) {
                             Notification::make()
                                 ->warning()
                                 ->title('Product Already Exists')
                                 ->body("This product - {$selectedVariant['public_name']} has already been imported: {$existingProduct->name}")
                                 ->send();
+
                             return;
                         }
 
@@ -124,7 +124,7 @@ class ListProducts extends ListRecords
                         Notification::make()
                             ->success()
                             ->title("{$product->name}{$product->product_variant_name} Imported Successfully!")
-                            ->body("Tracking has automatically been enabled")
+                            ->body('Tracking has automatically been enabled')
                             ->send();
 
                         $this->redirect($this->getResource()::getUrl('index'));

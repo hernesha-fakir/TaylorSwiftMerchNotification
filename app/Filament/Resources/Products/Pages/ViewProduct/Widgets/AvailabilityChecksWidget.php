@@ -12,7 +12,9 @@ class AvailabilityChecksWidget extends BaseWidget
 {
     protected static ?string $heading = 'Latest Availability Checks';
 
-    protected int | string | array $columnSpan = 'full';
+    protected int|string|array $columnSpan = 'full';
+
+    public $record;
 
     public function table(Table $table): Table
     {
@@ -46,6 +48,6 @@ class AvailabilityChecksWidget extends BaseWidget
 
     protected function getRecord()
     {
-        return $this->getOwnerRecord();
+        return $this->record;
     }
 }

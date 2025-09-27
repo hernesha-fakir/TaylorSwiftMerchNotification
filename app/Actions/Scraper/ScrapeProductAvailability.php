@@ -10,9 +10,7 @@ class ScrapeProductAvailability
 {
     use AsAction;
 
-    public function __construct(protected TaylorSwiftScraperService $scraper)
-    {
-    }
+    public function __construct(protected TaylorSwiftScraperService $scraper) {}
 
     public function handle(Product $product)
     {
