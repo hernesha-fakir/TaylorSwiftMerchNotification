@@ -13,10 +13,9 @@ return new class extends Migration
     {
         Schema::create('availability_checks', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('product_variant_id');
-            $table->boolean('was_available');
-            $table->decimal('price_at_check', 8, 2)->nullable();
-            $table->timestamp('checked_at');
+            $table->foreignIdFor(\App\Models\Product::class)->constrained();
+            $table->boolean('is_available');
+            $table->decimal('price', 8, 2)->nullable();
             $table->timestamps();
         });
     }

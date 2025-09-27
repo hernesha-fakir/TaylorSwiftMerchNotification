@@ -2,9 +2,17 @@
 
 namespace App\Filament\Resources\Products\Pages;
 
+use App\Actions\Scraper\ScrapeProductData;
 use App\Filament\Resources\Products\ProductResource;
-use Filament\Actions\CreateAction;
+use App\Models\Product;
+use App\Services\ProductImportService;
+use Filament\Actions\Action;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Select;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 
 class ListProducts extends ListRecords
 {
@@ -13,7 +21,105 @@ class ListProducts extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            CreateAction::make(),
+            Action::make('importFromUrl')
+                ->label('Import from URL')
+                ->icon('heroicon-o-plus')
+                ->color('success')
+                ->schema([
+                    TextInput::make('url')
+                        ->label('Taylor Swift Product URL')
+                        ->url()
+                        ->required()
+                        ->placeholder('https://storeau.taylorswift.com/products/...')
+                        ->helperText('Paste any Taylor Swift product URL and we\'ll automatically detect available variants!')
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(function ($state, Set $set) {
+                            if (empty($state)) {
+                                $set('variant_options', []);
+                                $set('selected_variant', null);
+                                return;
+                            }
+
+                            try {
+                                $result = ScrapeProductData::run($state);
+                                $variants = $result['product']['variants'];
+
+                                if (count($variants) > 1) {
+                                    $options = [];
+                                    foreach ($variants as $variant) {
+                                        $options[$variant['id']] = $variant['public_title'];
+                                    }
+                                    $set('variant_options', $options);
+                                    $set('selected_variant', array_key_first($options));
+                                } else if (count($variants) === 1) {
+                                    $set('variant_options', []);
+                                    $set('selected_variant', $variants[0]['id']);
+                                    $set('variant_name', $variants[0]['public_title']);
+                                } else {
+                                    $set('variant_options', []);
+                                    $set('selected_variant', null);
+                                    $set('variant_name', null);
+                                }
+                            } catch (\Exception $e) {
+                                $set('variant_options', []);
+                                $set('selected_variant', null);
+                            }
+                        })
+                        ->columnSpanFull(),
+                    Select::make('selected_variant')
+                        ->label('Select Variant')
+                        ->options(fn (Get $get): array => $get('variant_options') ?? [])
+                        ->visible(fn (Get $get): bool => !empty($get('variant_options')))
+                        ->required(fn (Get $get): bool => !empty($get('variant_options')))
+                        ->live()
+                        ->afterStateUpdated(function ($state, Set $set, Get $get) {
+                            $options = $get('variant_options') ?? [];
+                            if (isset($options[$state])) {
+                                $variantName = $options[$state];
+                                // Extract just the variant name without the type suffix
+                                $set('variant_name', preg_replace('/\s+\([^)]+\)$/', '', $variantName));
+                            }
+                        }),
+                ])
+                ->action(function (array $data) {
+                    try {
+                        $result = ScrapeProductData::run($data['url']);
+                        $productData = $result;
+
+                        $variantId = $data['selected_variant'] ?? null;
+                        $selectedVariant = collect($productData['product']['variants'])->firstWhere('id', $variantId);
+
+                        // Check if this product/variant combination already exists
+                        $existingProduct = Product::where('external_product_id', $productData['product']['id'])->where('product_variant_id', $variantId)->first();
+
+
+                        if ($existingProduct) {
+                            Notification::make()
+                                ->warning()
+                                ->title('Product Already Exists')
+                                ->body("This product - {$selectedVariant['public_name']} has already been imported: {$existingProduct->name}")
+                                ->send();
+                            return;
+                        }
+
+                        $product = \App\Actions\Product\CreateProduct::run($data['url'], $productData, $variantId);
+
+                        Notification::make()
+                            ->success()
+                            ->title("{$product->name}{$product->product_variant_name} Imported Successfully!")
+                            ->body("Tracking has automatically been enabled")
+                            ->send();
+
+                        $this->redirect($this->getResource()::getUrl('index'));
+
+                    } catch (\Exception $e) {
+                        Notification::make()
+                            ->danger()
+                            ->title('Failed to Import Product')
+                            ->body($e->getMessage())
+                            ->send();
+                    }
+                }),
         ];
     }
 }

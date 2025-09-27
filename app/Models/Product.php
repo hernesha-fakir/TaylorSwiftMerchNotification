@@ -21,37 +21,37 @@ class Product extends Model
 
     protected $casts = [
         'price' => 'decimal:2',
+        'is_tracked' => 'boolean'
     ];
 
-    public function variants(): HasMany
+    public function availabilityChecks(): HasMany
     {
-        return $this->hasMany(ProductVariant::class);
+        return $this->hasMany(AvailabilityCheck::class);
     }
 
-    public function trackedItems(): HasManyThrough
+     protected function variantUrl(): Attribute
     {
-        return $this->hasManyThrough(UserTrackedItem::class, ProductVariant::class);
+        return Attribute::make(
+            get: function () {
+                return $this->url . '?variant=' . $this->product_variant_id;
+            },
+        );
     }
 
-    public function scopeAvailable(Builder $query): Builder
+    protected function lastChecked(): Attribute
     {
-        return $query->whereHas('variants', function (Builder $query) {
-            $query->where('is_available', true);
-        });
-    }
-
-    public function scopeUnavailable(Builder $query): Builder
-    {
-        return $query->whereDoesntHave('variants', function (Builder $query) {
-            $query->where('is_available', true);
-        });
+        return Attribute::make(
+            get: function () {
+                return $this->availabilityChecks()->latest()->first()?->created_at;
+            },
+        );
     }
 
     protected function isAvailable(): Attribute
     {
         return Attribute::make(
             get: function () {
-                return $this->variants()->where('is_available', true)->exists();
+                return $this->availabilityChecks()->latest()->first()?->is_available;
             },
         );
     }

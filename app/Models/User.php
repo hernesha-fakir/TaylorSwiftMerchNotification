@@ -47,13 +47,4 @@ class User extends Authenticatable
         ];
     }
 
-    public function trackedItems(): HasMany
-    {
-        return $this->hasMany(UserTrackedItem::class);
-    }
-
-    public function notifications(): HasMany
-    {
-        return $this->hasMany(Notification::class);
-    }
 }

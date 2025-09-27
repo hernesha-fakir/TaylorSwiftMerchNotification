@@ -3,27 +3,45 @@
 namespace App\Services;
 
 use App\Models\Product;
-use App\Models\ProductVariant;
-use App\Models\UserTrackedItem;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class ProductImportService
 {
-    public function importFromUrl(string $url, int $userId): UserTrackedItem
+
+    public function __construct(protected TaylorSwiftScraperService $scraper)
+    {
+    }
+
+    public function importProductFromUrl(string $url): array
     {
         Log::info("Importing product from URL: {$url}");
+
+
+        dd($this->scraper->getProductData($url));
 
         $parsedData = $this->parseUrl($url);
         $productData = $this->scrapeProductData($parsedData['baseUrl']);
 
-        $product = $this->findOrCreateProduct($productData);
-        $variant = $this->findOrCreateVariant($product, $parsedData['variantId'], $parsedData['baseUrl']);
 
-        return $this->createTrackedItem($userId, $variant);
+        return [
+            'productData' => $productData,
+            'selectedVariantId' => $parsedData['variantId'],
+            'availableVariants' => $productData['variants'],
+        ];
     }
 
-    private function parseUrl(string $url): array
+    public function createProductWithVariant(array $productData, ?string $variantId = null, ?string $variantName = null): Product
+    {
+        Log::info("Creating product: {$productData['name']} with variant: {$variantName}");
+
+        $productData['product_variant_id'] = $variantId;
+        $productData['product_variant_name'] = $variantName;
+
+        return $this->findOrCreateProduct($productData);
+    }
+
+    public function parseUrl(string $url): array
     {
         $baseUrl = strtok($url, '?');
 
@@ -39,7 +57,7 @@ class ProductImportService
         ];
     }
 
-    private function scrapeProductData(string $url): array
+    public function scrapeProductData(string $url): array
     {
         $response = Http::timeout(30)
             ->withHeaders([
@@ -56,6 +74,7 @@ class ProductImportService
         $name = $this->extractProductName($html);
         $price = $this->extractPrice($html);
         $imageUrl = $this->extractImageUrl($html);
+        $variants = $this->extractVariants($html);
         $externalProductId = $this->extractProductId($url, $html);
 
         return [
@@ -63,6 +82,7 @@ class ProductImportService
             'url' => $url,
             'price' => $price,
             'image_url' => $imageUrl,
+            'variants' => $variants,
             'external_product_id' => $externalProductId,
         ];
     }
@@ -151,170 +171,72 @@ class ProductImportService
         return null;
     }
 
-    private function extractVariantSize(string $html): ?string
+    public function extractAvailableVariants(string $html): array
     {
-        if (preg_match('/<span[^>]*class="[^"]*selected[^"]*"[^>]*>([^<]+)<\/span>/i', $html, $matches)) {
-            $size = trim($matches[1]);
-            if (in_array(strtoupper($size), ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', 'XXL', 'XXXL'])) {
-                return $size;
-            }
-        }
+        $variants = [];
 
-        return null;
-    }
+        // Look for variant select options (like sizes)
+        if (preg_match_all('/<option[^>]*value="([^"]*)"[^>]*>([^<]+)<\/option>/i', $html, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $match) {
+                $variantId = trim($match[1]);
+                $variantName = trim($match[2]);
 
-    private function findOrCreateProduct(array $data): Product
-    {
-        $product = Product::where('url', $data['url'])
-            ->orWhere('external_product_id', $data['external_product_id'])
-            ->first();
-
-        if (!$product) {
-            Log::info("Creating new product: {$data['name']}");
-            $product = Product::create($data);
-        }
-
-        return $product;
-    }
-
-    private function findOrCreateVariant(Product $product, ?string $variantId, string $url): ProductVariant
-    {
-        if (!$variantId) {
-            $variant = $product->variants()->whereNull('size')->first();
-            if (!$variant) {
-                $response = Http::timeout(30)
-                    ->withHeaders([
-                        'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
-                    ])
-                    ->get($url);
-
-                $isAvailable = true;
-                if ($response->successful()) {
-                    $isAvailable = $this->parseVariantAvailability($response->body());
+                // Skip empty values or "Select Size" type options
+                if (empty($variantId) ||
+                    stripos($variantName, 'select') !== false ||
+                    stripos($variantName, 'choose') !== false) {
+                    continue;
                 }
 
-                Log::info("Creating variant without size for product: {$product->name}, available: " . ($isAvailable ? 'yes' : 'no'));
-                $variant = ProductVariant::create([
-                    'product_id' => $product->id,
-                    'size' => null,
-                    'sku' => null,
-                    'is_available' => $isAvailable,
-                ]);
-            }
-            return $variant;
-        }
-
-        $variant = $product->variants()->where('sku', $variantId)->first();
-        if ($variant) {
-            return $variant;
-        }
-
-        $variantUrl = $url . '?variant=' . $variantId;
-        $response = Http::timeout(30)
-            ->withHeaders([
-                'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
-            ])
-            ->get($variantUrl);
-
-        $size = null;
-        if ($response->successful()) {
-            $size = $this->extractVariantSize($response->body());
-        }
-
-        Log::info("Creating new variant for product: {$product->name}, size: {$size}, SKU: {$variantId}");
-
-        return ProductVariant::create([
-            'product_id' => $product->id,
-            'size' => $size,
-            'sku' => $variantId,
-            'is_available' => $this->parseVariantAvailability($response->body() ?? ''),
-        ]);
-    }
-
-    private function createTrackedItem(int $userId, ProductVariant $variant): UserTrackedItem
-    {
-        $existing = UserTrackedItem::where('user_id', $userId)
-            ->where('product_variant_id', $variant->id)
-            ->withTrashed()
-            ->first();
-
-        if ($existing) {
-            if ($existing->trashed()) {
-                Log::info("Restoring previously deleted tracked item for user {$userId}, variant {$variant->id}");
-                $existing->restore();
-                return $existing;
-            } else {
-                Log::info("User {$userId} is already tracking variant {$variant->id}");
-                return $existing;
-            }
-        }
-
-        Log::info("Creating tracked item for user {$userId}, variant: {$variant->product->name} - {$variant->size}");
-
-        return UserTrackedItem::create([
-            'user_id' => $userId,
-            'product_variant_id' => $variant->id,
-        ]);
-    }
-
-    private function parseVariantAvailability(string $html): bool
-    {
-        // First check for obvious out of stock indicators
-        $outOfStockIndicators = [
-            '/sold[\\s\\-]?out/i',
-            '/out[\\s\\-]?of[\\s\\-]?stock/i'
-        ];
-
-        foreach ($outOfStockIndicators as $pattern) {
-            if (preg_match($pattern, $html)) {
-                // But if there are multiple "add to cart" references, it might be dynamic
-                $addToCartCount = preg_match_all('/add[\\s\\w]*cart/i', $html);
-                if ($addToCartCount < 3) {
-                    return false; // Definitely out of stock
+                // Look for size-like patterns
+                if (preg_match('/^(XS|S|M|L|XL|2XL|3XL|XXL|XXXL|\d+)$/i', $variantName) ||
+                    preg_match('/size/i', $variantName)) {
+                    $variants[] = [
+                        'id' => $variantId,
+                        'name' => $variantName,
+                        'type' => 'size'
+                    ];
                 }
             }
         }
 
-        // Find all cart-related buttons
-        preg_match_all('/<button[^>]*>/i', $html, $matches);
+        // Look for variant buttons/links
+        if (preg_match_all('/<[^>]*data-variant[^>]*=[\'""]([^\'""]*)[\'"""][^>]*>([^<]*)<\/[^>]*>/i', $html, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $match) {
+                $variantId = trim($match[1]);
+                $variantName = trim($match[2]);
 
-        $hasEnabledCartButton = false;
-        $hasCartButtons = false;
-
-        foreach ($matches[0] as $button) {
-            // Skip buttons that are clearly not cart buttons
-            if (stripos($button, 'close') !== false ||
-                stripos($button, 'drawer') !== false ||
-                stripos($button, 'modal') !== false) {
-                continue;
-            }
-
-            // Check if this is a cart/add button
-            if ((stripos($button, 'cart') !== false ||
-                 stripos($button, 'name="add"') !== false ||
-                 stripos($button, 'buy') !== false) &&
-                (stripos($button, 'submit') !== false || stripos($button, 'form') !== false)) {
-
-                $hasCartButtons = true;
-
-                // Check if it's NOT disabled
-                if (stripos($button, 'disabled') === false) {
-                    $hasEnabledCartButton = true;
-                    break;
+                if (!empty($variantId) && !empty($variantName)) {
+                    $variants[] = [
+                        'id' => $variantId,
+                        'name' => $variantName,
+                        'type' => 'variant'
+                    ];
                 }
             }
         }
 
-        // If we found cart buttons but they're all disabled, and there's JavaScript/dynamic content,
-        // assume it might be available (will be corrected on next check if wrong)
-        if (!$hasEnabledCartButton && $hasCartButtons) {
-            if (stripos($html, 'ShopifyAnalytics') !== false ||
-                stripos($html, 'data-available') !== false) {
-                // For dynamic sites, default to available and let monitoring correct it
-                return true;
+        // If no variants found but the URL has a variant parameter, include it
+        if (empty($variants) && str_contains($url, 'variant=')) {
+            preg_match('/variant=([0-9]+)/', $url, $matches);
+            if (!empty($matches[1])) {
+                $variants[] = [
+                    'id' => $matches[1],
+                    'name' => 'Default',
+                    'type' => 'default'
+                ];
             }
         }
 
-        return $hasEnabledCartButton;
+        return $variants;
     }
+
+    public function findOrCreateProduct(array $data): Product
+    {
+        // For the new version, we always create since validation is done at the UI level
+        Log::info("Creating new product: {$data['name']}");
+        return Product::create($data);
+    }
+
+
 }

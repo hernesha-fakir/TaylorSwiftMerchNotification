@@ -14,11 +14,13 @@ return new class extends Migration
         Schema::create('products', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->text('description')->nullable();
             $table->string('url');
             $table->string('external_product_id')->unique();
+            $table->string('product_variant_name')->nullable();
+            $table->string('product_variant_id')->nullable();
             $table->decimal('price', 8, 2)->nullable();
             $table->string('image_url')->nullable();
+            $table->boolean('is_tracked')->default(true);
             $table->timestamps();
         });
     }
