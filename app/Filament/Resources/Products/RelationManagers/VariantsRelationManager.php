@@ -59,9 +59,26 @@ class VariantsRelationManager extends RelationManager
                 TextColumn::make('sku')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('trackedItems_count')
-                    ->counts('trackedItems')
-                    ->label('Tracked by'),
+                TextColumn::make('active_tracked_count')
+                    ->label('Tracked by')
+                    ->getStateUsing(function ($record) {
+                        $activeTrackers = $record->trackedItems()
+                            ->with('user')
+                            ->whereNull('deleted_at')
+                            ->get();
+
+                        $count = $activeTrackers->count();
+
+                        if ($count === 0) {
+                            return '';
+                        }
+
+                        $userNames = $activeTrackers->pluck('user.name')->join(', ');
+
+                        return $count === 1
+                            ? "1 user: {$userNames}"
+                            : "{$count} users: {$userNames}";
+                    }),
             ])
             ->filters([
                 //
