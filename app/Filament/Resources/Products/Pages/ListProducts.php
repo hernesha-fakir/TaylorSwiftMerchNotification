@@ -7,6 +7,7 @@ use App\Filament\Resources\Products\ProductResource;
 use App\Models\Product;
 use App\Services\ProductImportService;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
@@ -66,6 +67,8 @@ class ListProducts extends ListRecords
                             }
                         })
                         ->columnSpanFull(),
+                    Hidden::make('selected_variant')
+                    ->visible(fn (Get $get): bool => empty($get('variant_options'))),
                     Select::make('selected_variant')
                         ->label('Select Variant')
                         ->options(fn (Get $get): array => $get('variant_options') ?? [])
