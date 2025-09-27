@@ -6,6 +6,7 @@ use App\Actions\Scraper\ScrapeProductAvailability;
 use App\Models\AvailabilityCheck;
 use App\Models\Product;
 use App\Models\User;
+use App\Notifications\PriceChangedNotification;
 use App\Notifications\StockAvailableNotification;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -20,6 +21,7 @@ class CheckAvailabilityForProduct
         // Get the actual previous availability from the latest check BEFORE creating new one
         $previousCheck = $product->availabilityChecks()->latest()->first();
         $previousAvailability = $previousCheck ? $previousCheck->is_available : false;
+        $previousPrice = $previousCheck ? $previousCheck->price : null;
 
         $availabilityCheck = new AvailabilityCheck();
         $availabilityCheck->product_id = $product->id;
@@ -28,6 +30,7 @@ class CheckAvailabilityForProduct
         $availabilityCheck->save();
 
         $this->checkAndNotifyStockAvailable($product, $previousAvailability, $data['is_available']);
+        $this->checkAndNotifyPriceChanged($product, $previousPrice, $data['price']);
     }
 
     private function checkAndNotifyStockAvailable(Product $product, bool $previousAvailability, bool $currentAvailability)
@@ -38,6 +41,18 @@ class CheckAvailabilityForProduct
 
             foreach ($users as $user) {
                 $user->notify(new StockAvailableNotification($product, $productUrl));
+            }
+        }
+    }
+
+    private function checkAndNotifyPriceChanged(Product $product, ?float $previousPrice, float $currentPrice)
+    {
+        if ($previousPrice !== null && $previousPrice != $currentPrice) {
+            $users = User::all();
+            $productUrl = $product->url;
+
+            foreach ($users as $user) {
+                $user->notify(new PriceChangedNotification($product, $productUrl, $previousPrice, $currentPrice));
             }
         }
     }
