@@ -6,6 +6,11 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property-read string $variant_url
+ * @property-read \Carbon\Carbon|null $last_checked
+ * @property-read bool|null $is_available
+ */
 class Product extends Model
 {
     protected $fillable = [
