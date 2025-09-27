@@ -15,8 +15,11 @@ class Product extends Model
         'description',
         'url',
         'external_product_id',
+        'product_variant_name',
+        'product_variant_id',
         'price',
         'image_url',
+        'is_tracked',
     ];
 
     protected $casts = [
