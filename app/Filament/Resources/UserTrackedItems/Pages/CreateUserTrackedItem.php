@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Filament\Resources\Products\Pages;
+namespace App\Filament\Resources\UserTrackedItems\Pages;
 
-use App\Filament\Resources\Products\ProductResource;
+use App\Filament\Resources\UserTrackedItems\UserTrackedItemResource;
 use Filament\Actions\Action;
 use Filament\Resources\Pages\CreateRecord;
 
-class CreateProduct extends CreateRecord
+class CreateUserTrackedItem extends CreateRecord
 {
-    protected static string $resource = ProductResource::class;
+    protected static string $resource = UserTrackedItemResource::class;
 
     protected function getCreateAnotherFormAction(): Action
     {

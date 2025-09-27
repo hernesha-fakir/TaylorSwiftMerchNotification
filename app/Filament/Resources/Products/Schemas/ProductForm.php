@@ -24,7 +24,6 @@ class ProductForm
                     ->maxLength(255)
                     ->placeholder('https://storeau.taylorswift.com/products/...'),
                 TextInput::make('external_product_id')
-                    ->required()
                     ->maxLength(255)
                     ->unique(ignoreRecord: true)
                     ->placeholder('Shopify product ID'),
