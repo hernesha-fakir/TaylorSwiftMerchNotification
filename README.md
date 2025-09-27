@@ -1,61 +1,207 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 🎵 Taylor Swift Merch Notification
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A Laravel application that automatically tracks Taylor Swift merchandise availability and price changes, sending notifications when items come back in stock or prices change.
 
-## About Laravel
+![Laravel](https://img.shields.io/badge/Laravel-12.x-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)
+![PHP](https://img.shields.io/badge/PHP-8.2+-777BB4?style=for-the-badge&logo=php&logoColor=white)
+![Filament](https://img.shields.io/badge/Filament-4.x-F59E0B?style=for-the-badge&logo=laravel&logoColor=white)
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 📋 Context & Limitations
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+**This project was built as a skill demonstration rather than for production use.** It showcases proficiency in modern Laravel development practices, including:
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- Laravel 12 with latest framework features
+- Filament 4.x for rapid admin panel development
+- Modern PHP patterns (Actions, typed properties, enums)
+- Code quality tooling (PHPStan, Laravel Pint)
+- Queue-based background processing
+- Headless browser automation
 
-## Learning Laravel
+### Limitations
+- **Single-user application**: Designed for personal use, not multi-tenant
+- **Development environment**: Uses SQLite and Mailtrap (not production-ready)
+- **Limited error handling**: Basic retry logic, not enterprise-grade resilience
+- **No rate limiting**: Web scraping without throttling considerations
+- **Simplified authentication**: Basic Filament auth, no advanced user management
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## ✨ Features
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+### 📧 Automatic Notifications and Monitoring
+- **Stock Availability**: Get notified when out-of-stock items become available
+- **Price Changes**: Receive alerts when product prices increase or decrease
+- **Database Notifications**: In-app notification history
+- **Hourly Checks**: Automatically monitors all tracked products every hour
+- **Background Processing**: Queue-based notification system
+- **Error Handling**: Robust error handling with retry logic
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 🎛️ Admin Dashboard
+- **Filament Admin Panel**: Modern, responsive admin interface
+- **Availability History**: Complete table of all availability checks with filters
+- **Real-time Data**: Latest stock status and pricing information
 
-## Laravel Sponsors
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## 🚀 Quick Start
 
-### Premium Partners
+### Prerequisites
+- PHP 8.2 or higher
+- Composer
+- SQLite (default) or MySQL/PostgreSQL
+- Node.js & NPM (for asset compilation)
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### Installation
 
-## Contributing
+1. **Clone the repository**
+```bash
+git clone <repository-url>
+cd TaylorSwiftMerchNotification
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+2. **Install PHP dependencies**
+```bash
+composer install
+```
 
-## Code of Conduct
+3. **Setup environment**
+```bash
+cp .env.example .env
+php artisan key:generate
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+4. **Configure database**
+```bash
+# Default uses SQLite (no additional setup needed)
+touch database/database.sqlite
+php artisan migrate
+```
 
-## Security Vulnerabilities
+5. **Configure Mailtrap (for email notifications)**
+- Sign up at [mailtrap.io](https://mailtrap.io)
+- Update `.env` with your Mailtrap credentials:
+```env
+MAIL_HOST=sandbox.smtp.mailtrap.io
+MAIL_PORT=2525
+MAIL_USERNAME=your_mailtrap_username
+MAIL_PASSWORD=your_mailtrap_password
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+6. **Install frontend dependencies**
+```bash
+npm install
+npm run build
+```
 
-## License
+7. **Create admin user**
+```bash
+php artisan make:filament-user
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+8. **Start the application**
+```bash
+# For development
+composer run dev
+
+# Or individually:
+php artisan serve
+php artisan queue:work
+npm run dev
+```
+
+## 🛠️ Development
+
+### Code Quality Tools
+
+The project includes Laravel Pint and PHPStan for code quality:
+
+```bash
+# Format code
+composer pint
+
+# Check formatting (dry run)
+composer pint-test
+
+# Run static analysis
+composer stan
+
+# Run both
+composer analyze
+```
+
+### Testing
+
+```bash
+# Run tests
+composer test
+
+# Test specific notification
+php artisan test:price-change --old-price=25.00 --new-price=30.00
+```
+
+### Architecture
+
+#### Key Components
+
+- **Models**
+  - `Product`: Tracked merchandise items
+  - `AvailabilityCheck`: Historical availability and pricing data
+  - `User`: Admin users
+
+- **Actions**
+  - `CheckAvailabilityForProduct`: Main availability checking logic
+  - `ScrapeProductAvailability`: Headless Chrome scraping
+
+- **Notifications**
+  - `StockAvailableNotification`: Stock availability alerts
+  - `PriceChangedNotification`: Price change alerts
+
+- **Widgets**
+  - `AvailabilityChecksTableWidget`: Main dashboard table
+
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+**Filament admin not accessible**
+```bash
+# Create admin user
+php artisan make:filament-user
+```
+
+**Chrome/scraping issues**
+- Ensure Chrome is installed and accessible
+- Check `chrome-php/chrome` package is properly installed
+
+**Email notifications not sending**
+- Verify Mailtrap credentials in `.env`
+- Check queue worker is running
+- Check `storage/logs/laravel.log` for errors
+
+### Logs
+
+View application logs:
+```bash
+tail -f storage/logs/laravel.log
+```
+
+View scheduler logs:
+```bash
+tail -f storage/logs/scheduler.log
+```
+
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Built with [Laravel 12](https://laravel.com)
+- Admin panel powered by [Filament](https://filamentphp.com)
+- Web scraping via [Chrome PHP](https://github.com/chrome-php/chrome)
+- Styled with [Tailwind CSS](https://tailwindcss.com)
+
+---
+
+**Made with ❤️ for Taylor Swift fans by [Hernesha Fakir]()**
+
+*"It's a love story, baby just say yes" - to automated merch notifications! 🎵*
