@@ -33,7 +33,7 @@ class ViewProduct extends ViewRecord
                 ->after(function ($livewire) {
                     $livewire->dispatch('refreshRelation');
                 })
-                ->color('success'),
+                ->color('primary'),
         ];
     }
 }

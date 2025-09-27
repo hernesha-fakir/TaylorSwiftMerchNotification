@@ -22,6 +22,9 @@ class ProductsTable
                 TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('product_variant_name')
+                    ->searchable()
+                    ->sortable(),
                 IconColumn::make('is_available')
                     ->boolean()
                     ->label('Available'),
@@ -51,7 +54,7 @@ class ProductsTable
                 //
             ])
             ->recordActions([
-                EditAction::make(),
+                //
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

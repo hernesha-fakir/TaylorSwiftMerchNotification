@@ -5,7 +5,6 @@ namespace App\Filament\Resources\Products\Pages;
 use App\Actions\Scraper\ScrapeProductData;
 use App\Filament\Resources\Products\ProductResource;
 use App\Models\Product;
-use App\Services\ProductImportService;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\TextInput;
@@ -25,7 +24,7 @@ class ListProducts extends ListRecords
             Action::make('importFromUrl')
                 ->label('Import from URL')
                 ->icon('heroicon-o-plus')
-                ->color('success')
+                ->color('primary')
                 ->schema([
                     TextInput::make('url')
                         ->label('Taylor Swift Product URL')

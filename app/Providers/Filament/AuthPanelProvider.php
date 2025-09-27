@@ -26,7 +26,8 @@ class AuthPanelProvider extends PanelProvider
         return $panel
             ->default()
             ->id('auth')
-            ->path('auth')
+            ->path('/')
+            ->domain(config('app.url'))
             ->login()
             ->registration()
             ->profile()

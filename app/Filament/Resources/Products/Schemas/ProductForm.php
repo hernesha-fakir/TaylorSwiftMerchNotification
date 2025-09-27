@@ -3,8 +3,9 @@
 namespace App\Filament\Resources\Products\Schemas;
 
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\ViewField;
 use Filament\Schemas\Schema;
+
 
 class ProductForm
 {
@@ -15,9 +16,7 @@ class ProductForm
                 TextInput::make('name')
                     ->required()
                     ->maxLength(255),
-                Textarea::make('description')
-                    ->columnSpanFull()
-                    ->rows(3),
+                TextInput::make('product_variant_name'),
                 TextInput::make('url')
                     ->url()
                     ->required()
@@ -32,10 +31,15 @@ class ProductForm
                     ->prefix('$')
                     ->step(0.01)
                     ->placeholder('0.00'),
-                TextInput::make('image_url')
-                    ->url()
-                    ->maxLength(255)
-                    ->placeholder('https://example.com/image.jpg'),
+                ViewField::make('image_preview')
+                    ->view('filament.forms.components.product-image')
+                    ->viewData(function ($record) {
+                        return [
+                            'image_url' => $record?->image_url,
+                            'product_name' => $record?->name,
+                        ];
+                    })
+                    ->columnSpanFull(),
             ]);
     }
 }
