@@ -32,7 +32,7 @@ class ListProducts extends ListRecords
                         ->required()
                         ->placeholder('https://storeau.taylorswift.com/products/...')
                         ->helperText('Paste any Taylor Swift product URL and we\'ll automatically detect available variants!')
-                        ->live(onBlur: true)
+                        ->debounce(3000)
                         ->afterStateUpdated(function ($state, Set $set) {
                             if (empty($state)) {
                                 $set('variant_options', []);
@@ -71,7 +71,7 @@ class ListProducts extends ListRecords
                     Select::make('selected_variant')
                         ->label('Select Variant')
                         ->options(fn (Get $get): array => $get('variant_options') ?? [])
-                        ->visible(fn (Get $get): bool => !empty($get('variant_options')))
+                        ->disabled(fn (Get $get): bool => empty($get('variant_options')))
                         ->required(fn (Get $get): bool => !empty($get('variant_options')))
                         ->live()
                         ->afterStateUpdated(function ($state, Set $set, Get $get) {
