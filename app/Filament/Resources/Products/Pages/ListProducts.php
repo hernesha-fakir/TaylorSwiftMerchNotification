@@ -32,13 +32,18 @@ class ListProducts extends ListRecords
                         ->required()
                         ->placeholder('https://storeau.taylorswift.com/products/...')
                         ->helperText('Paste any Taylor Swift product URL and we\'ll automatically detect available variants!')
-                        ->debounce(3000)
+                        ->live()
                         ->afterStateUpdated(function ($state, Set $set) {
                             if (empty($state)) {
                                 $set('variant_options', []);
                                 $set('selected_variant', null);
+                                $set('has_url', false);
                                 return;
                             }
+
+                            $set('has_url', true);
+                            // Clear previous variants immediately to show loading state
+                            $set('variant_options', []);
 
                             try {
                                 $result = ScrapeProductData::run($state);
@@ -66,12 +71,22 @@ class ListProducts extends ListRecords
                             }
                         })
                         ->columnSpanFull(),
+                    Hidden::make('has_url')
+                        ->default(false),
                     Hidden::make('selected_variant')
                     ->visible(fn (Get $get): bool => empty($get('variant_options'))),
                     Select::make('selected_variant')
                         ->label('Select Variant')
                         ->options(fn (Get $get): array => $get('variant_options') ?? [])
                         ->disabled(fn (Get $get): bool => empty($get('variant_options')))
+                        ->helperText(fn (Get $get) =>
+                            !$get('has_url')
+                                ? null
+                                : (empty($get('variant_options'))
+                                    ? '🔄 Loading variants...'
+                                    : 'Select a variant to import'
+                                )
+                        )
                         ->required(fn (Get $get): bool => !empty($get('variant_options')))
                         ->live()
                         ->afterStateUpdated(function ($state, Set $set, Get $get) {
