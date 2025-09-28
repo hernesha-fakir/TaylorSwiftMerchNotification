@@ -13,6 +13,9 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\HtmlString;
+use Livewire\Component;
 
 class ListProducts extends ListRecords
 {
@@ -25,6 +28,20 @@ class ListProducts extends ListRecords
                 ->label('Import from URL')
                 ->icon('heroicon-o-plus')
                 ->color('primary')
+                ->modalSubmitAction(function($action, $livewire){
+
+                        $data = $livewire->mountedActions[0]['data'];
+
+                        if(!$data['url']){
+                            $label = "Enter Product URL";
+                        }else{
+                            $label = "Import Product";
+                        }
+
+                        $action->color(fn (): string => $label == 'Import Product' ? 'success' :  'gray');
+                        $action->disabled(fn (): bool => $label == 'Import Product' ? false : true);
+                        $action->label($label);
+                })
                 ->schema([
                     TextInput::make('url')
                         ->label('Taylor Swift Product URL')
@@ -33,16 +50,8 @@ class ListProducts extends ListRecords
                         ->placeholder('https://storeau.taylorswift.com/products/...')
                         ->helperText('Paste any Taylor Swift product URL and we\'ll automatically detect available variants!')
                         ->live()
-                        ->afterStateUpdated(function ($state, Set $set) {
-                            if (empty($state)) {
-                                $set('variant_options', []);
-                                $set('selected_variant', null);
-                                $set('has_url', false);
+                        ->afterStateUpdated(function ($livewire, $component, $state, Set $set) {
 
-                                return;
-                            }
-
-                            $set('has_url', true);
                             // Clear previous variants immediately to show loading state
                             $set('variant_options', []);
 
@@ -58,45 +67,31 @@ class ListProducts extends ListRecords
                                     $set('variant_options', $options);
                                     $set('selected_variant', array_key_first($options));
                                 } elseif (count($variants) === 1) {
-                                    $set('variant_options', []);
+                                    $set('variant_options', null);
                                     $set('selected_variant', $variants[0]['id']);
                                     $set('variant_name', $variants[0]['public_title']);
-                                } else {
-                                    $set('variant_options', []);
-                                    $set('selected_variant', null);
-                                    $set('variant_name', null);
                                 }
+
+                                $set('loaded_variants', true);
+
                             } catch (\Exception $e) {
                                 $set('variant_options', []);
                                 $set('selected_variant', null);
                             }
                         })
                         ->columnSpanFull(),
-                    Hidden::make('has_url')
-                        ->default(false),
+
                     Hidden::make('selected_variant')
-                        ->visible(fn (Get $get): bool => empty($get('variant_options'))),
+                        ->visible(fn (Get $get): bool => $get('loaded_variants') == true && $get('variant_options') == null),
                     Select::make('selected_variant')
                         ->label('Select Variant')
+                        ->key('select_variant')
                         ->options(fn (Get $get): array => $get('variant_options') ?? [])
                         ->disabled(fn (Get $get): bool => empty($get('variant_options')))
-                        ->helperText(fn (Get $get) => ! $get('has_url')
-                                ? null
-                                : (empty($get('variant_options'))
-                                    ? '🔄 Loading variants...'
-                                    : 'Select a variant to import'
-                                )
-                        )
-                        ->required(fn (Get $get): bool => ! empty($get('variant_options')))
+                        ->helperText("Variants will automatically load a few seconds after you enter a URL")
+                        ->hidden(fn (Get $get): bool => $get('loaded_variants') == true && $get('variant_options') == null)
+                        ->required()
                         ->live()
-                        ->afterStateUpdated(function ($state, Set $set, Get $get) {
-                            $options = $get('variant_options') ?? [];
-                            if (isset($options[$state])) {
-                                $variantName = $options[$state];
-                                // Extract just the variant name without the type suffix
-                                $set('variant_name', preg_replace('/\s+\([^)]+\)$/', '', $variantName));
-                            }
-                        }),
                 ])
                 ->action(function (array $data) {
                     try {
@@ -130,6 +125,7 @@ class ListProducts extends ListRecords
                         $this->redirect($this->getResource()::getUrl('index'));
 
                     } catch (\Exception $e) {
+                        dd($e);
                         Notification::make()
                             ->danger()
                             ->title('Failed to Import Product')

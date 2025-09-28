@@ -1,6 +1,8 @@
 # 🎵 Taylor Swift Merch Notification
 
-A Laravel application that automatically tracks Taylor Swift merchandise availability and price changes, sending notifications when items come back in stock or prices change.
+I started working on a personal project that I have an interest in. It's an application that automatically tracks selected Taylor Swift merchandise availability and price changes, sending notifications when items come back in stock or prices change.
+
+Being a big "Swiftie," I found it helpful having notifications when an item in my size or choice was back in stock (not a feature available on the website).
 
 ![Laravel](https://img.shields.io/badge/Laravel-12.x-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)
 ![PHP](https://img.shields.io/badge/PHP-8.2+-777BB4?style=for-the-badge&logo=php&logoColor=white)

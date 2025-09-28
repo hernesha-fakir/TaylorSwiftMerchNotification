@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('url');
-            $table->string('external_product_id')->unique();
+            $table->string('external_product_id');
             $table->string('product_variant_name')->nullable();
             $table->string('product_variant_id')->nullable();
             $table->decimal('price', 8, 2)->nullable();

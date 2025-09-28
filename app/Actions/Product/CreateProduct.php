@@ -2,6 +2,7 @@
 
 namespace App\Actions\Product;
 
+use App\Actions\AvailabilityCheck\CheckAvailabilityForProduct;
 use App\Models\Product;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -25,6 +26,9 @@ class CreateProduct
         $product->image_url = 'https://storeau.taylorswift.com/cdn/shop/'.$productData['product_data']['featuredImage'];
 
         $product->save();
+
+        //immediately check the availability
+        CheckAvailabilityForProduct::dispatch($product);
 
         return $product;
     }
