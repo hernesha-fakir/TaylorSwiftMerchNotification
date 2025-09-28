@@ -38,7 +38,7 @@ class ListProducts extends ListRecords
                             $label = "Import Product";
                         }
 
-                        $action->color(fn (): string => $label == 'Import Product' ? 'success' :  'gray');
+                        $action->color(fn (): string => $label == 'Import Product' ? 'primary' :  'gray');
                         $action->disabled(fn (): bool => $label == 'Import Product' ? false : true);
                         $action->label($label);
                 })
