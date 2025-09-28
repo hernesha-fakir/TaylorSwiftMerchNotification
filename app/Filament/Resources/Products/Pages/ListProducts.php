@@ -125,7 +125,6 @@ class ListProducts extends ListRecords
                         $this->redirect($this->getResource()::getUrl('index'));
 
                     } catch (\Exception $e) {
-                        dd($e);
                         Notification::make()
                             ->danger()
                             ->title('Failed to Import Product')
