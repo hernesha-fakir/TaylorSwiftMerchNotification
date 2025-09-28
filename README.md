@@ -145,9 +145,11 @@ php artisan test:price-change --old-price=25.00 --new-price=30.00
   - `AvailabilityCheck`: Historical availability and pricing data
   - `User`: Admin users
 
-- **Actions**
+- **Actions** (using [Laravel Actions](https://laravelactions.com/))
   - `CheckAvailabilityForProduct`: Main availability checking logic
   - `ScrapeProductAvailability`: Headless Chrome scraping
+  - `ScrapeProductData`: Product data extraction
+  - `CreateProduct`: Product creation logic
 
 - **Notifications**
   - `StockAvailableNotification`: Stock availability alerts
@@ -155,6 +157,29 @@ php artisan test:price-change --old-price=25.00 --new-price=30.00
 
 - **Widgets**
   - `AvailabilityChecksTableWidget`: Main dashboard table
+
+#### Design Decisions
+
+**Laravel Actions Pattern**
+This project uses [Laravel Actions](https://laravelactions.com/) to organize business logic into single-purpose, reusable classes. Since Filament doesn't use traditional controllers, Actions provide a consistent way to execute business logic across different contexts:
+
+```php
+// In Filament Pages (app/Filament/Resources/Products/Pages/ListProducts.php:122)
+$product = \App\Actions\Product\CreateProduct::run($data['url'], $productData, $variantId);
+
+// In Filament Actions (app/Filament/Resources/Products/Pages/ViewProduct.php:23)
+CheckAvailabilityForProduct::run($this->record);
+
+// In Console Commands (app/Console/Commands/CheckAllProductsCommand.php:44)
+CheckAvailabilityForProduct::run($product);
+```
+
+**Price Handling (Division by 100)**
+Shopify stores prices in cents (e.g., $29.99 is stored as 2999). The application converts these to decimal format:
+```php
+$price = $selectedVariant['price'] / 100; // 2999 becomes 29.99
+```
+This ensures accurate price comparisons and proper display formatting while maintaining precision in monetary calculations.
 
 
 ## 🔧 Troubleshooting
