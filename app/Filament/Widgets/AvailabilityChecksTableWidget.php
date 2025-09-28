@@ -46,7 +46,7 @@ class AvailabilityChecksTableWidget extends BaseWidget
                     ->dateTime()
                     ->sortable()
                     ->since()
-                    ->tooltip(fn($record) => $record->created_at->format('Y-m-d H:i:s')),
+                    ->tooltip(fn ($record) => $record->created_at->format('Y-m-d H:i:s')),
             ])
             ->filters([
                 SelectFilter::make('product')

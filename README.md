@@ -5,7 +5,7 @@ I started working on a personal project that I have an interest in. It's an appl
 Being a big "Swiftie," I found it helpful having notifications when an item in my size or choice was back in stock (not a feature available on the website).
 
 ![Laravel](https://img.shields.io/badge/Laravel-12.x-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)
-![PHP](https://img.shields.io/badge/PHP-8.2+-777BB4?style=for-the-badge&logo=php&logoColor=white)
+![PHP](https://img.shields.io/badge/PHP-8.3+-777BB4?style=for-the-badge&logo=php&logoColor=white)
 ![Filament](https://img.shields.io/badge/Filament-4.x-F59E0B?style=for-the-badge&logo=laravel&logoColor=white)
 
 ## 📋 Context & Limitations
@@ -25,16 +25,15 @@ Being a big "Swiftie," I found it helpful having notifications when an item in m
 - **Limited error handling**: Basic retry logic, not enterprise-grade resilience
 - **No rate limiting**: Web scraping without throttling considerations
 - **Simplified authentication**: Basic Filament auth, no advanced user management
+- **No Automated testing**: Limited test coverage, not suitable for production use
 
 ## ✨ Features
 
 ### 📧 Automatic Notifications and Monitoring
 - **Stock Availability**: Get notified when out-of-stock items become available
 - **Price Changes**: Receive alerts when product prices increase or decrease
-- **Database Notifications**: In-app notification history
 - **Hourly Checks**: Automatically monitors all tracked products every hour
 - **Background Processing**: Queue-based notification system
-- **Error Handling**: Robust error handling with retry logic
 
 ### 🎛️ Admin Dashboard
 - **Filament Admin Panel**: Modern, responsive admin interface
@@ -45,7 +44,7 @@ Being a big "Swiftie," I found it helpful having notifications when an item in m
 ## 🚀 Quick Start
 
 ### Prerequisites
-- PHP 8.2 or higher
+- PHP 8.3 or higher
 - Composer
 - SQLite (default) or MySQL/PostgreSQL
 - Node.js & NPM (for asset compilation)
@@ -54,7 +53,7 @@ Being a big "Swiftie," I found it helpful having notifications when an item in m
 
 1. **Clone the repository**
 ```bash
-git clone <repository-url>
+git clone <https://github.com/harry-fakir/TaylorSwiftMerchNotification>
 cd TaylorSwiftMerchNotification
 ```
 
@@ -86,28 +85,10 @@ MAIL_USERNAME=your_mailtrap_username
 MAIL_PASSWORD=your_mailtrap_password
 ```
 
-6. **Install frontend dependencies**
-```bash
-npm install
-npm run build
-```
-
-7. **Create admin user**
+6. **Create admin user**
 ```bash
 php artisan make:filament-user
 ```
-
-8. **Start the application**
-```bash
-# For development
-composer run dev
-
-# Or individually:
-php artisan serve
-php artisan queue:work
-npm run dev
-```
-
 ## 🛠️ Development
 
 ### Code Quality Tools
@@ -126,16 +107,6 @@ composer stan
 
 # Run both
 composer analyze
-```
-
-### Testing
-
-```bash
-# Run tests
-composer test
-
-# Test specific notification
-php artisan test:price-change --old-price=25.00 --new-price=30.00
 ```
 
 ### Architecture

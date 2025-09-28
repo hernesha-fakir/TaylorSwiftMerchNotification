@@ -22,20 +22,17 @@ class CheckAllProductsCommand extends Command
      */
     protected $description = 'Check availability and price changes for all tracked products';
 
-
     public function handle()
     {
         $products = Product::where('is_tracked', true)->get();
 
         $this->info("Checking availability for {$products->count()} product(s)...");
 
-
         foreach ($products as $product) {
 
             $this->line("Checking: {$product->name}");
             CheckAvailabilityForProduct::dispatch($product);
         }
-
 
         return Command::SUCCESS;
     }

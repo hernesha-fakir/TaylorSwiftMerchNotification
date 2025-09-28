@@ -27,7 +27,7 @@ class CreateProduct
 
         $product->save();
 
-        //immediately check the availability
+        // immediately check the availability
         CheckAvailabilityForProduct::dispatch($product);
 
         return $product;

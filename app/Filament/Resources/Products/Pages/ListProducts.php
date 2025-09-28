@@ -13,9 +13,6 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
-use Illuminate\Support\Facades\Blade;
-use Illuminate\Support\HtmlString;
-use Livewire\Component;
 
 class ListProducts extends ListRecords
 {
@@ -28,19 +25,19 @@ class ListProducts extends ListRecords
                 ->label('Import from URL')
                 ->icon('heroicon-o-plus')
                 ->color('primary')
-                ->modalSubmitAction(function($action, $livewire){
+                ->modalSubmitAction(function ($action, $livewire) {
 
-                        $data = $livewire->mountedActions[0]['data'];
+                    $data = $livewire->mountedActions[0]['data'];
 
-                        if(!$data['url']){
-                            $label = "Enter Product URL";
-                        }else{
-                            $label = "Import Product";
-                        }
+                    if (! $data['url']) {
+                        $label = 'Enter Product URL';
+                    } else {
+                        $label = 'Import Product';
+                    }
 
-                        $action->color(fn (): string => $label == 'Import Product' ? 'primary' :  'gray');
-                        $action->disabled(fn (): bool => $label == 'Import Product' ? false : true);
-                        $action->label($label);
+                    $action->color(fn (): string => $label == 'Import Product' ? 'primary' : 'gray');
+                    $action->disabled(fn (): bool => $label == 'Import Product' ? false : true);
+                    $action->label($label);
                 })
                 ->schema([
                     TextInput::make('url')
@@ -88,10 +85,10 @@ class ListProducts extends ListRecords
                         ->key('select_variant')
                         ->options(fn (Get $get): array => $get('variant_options') ?? [])
                         ->disabled(fn (Get $get): bool => empty($get('variant_options')))
-                        ->helperText("Variants will automatically load a few seconds after you enter a URL")
+                        ->helperText('Variants will automatically load a few seconds after you enter a URL')
                         ->hidden(fn (Get $get): bool => $get('loaded_variants') == true && $get('variant_options') == null)
                         ->required()
-                        ->live()
+                        ->live(),
                 ])
                 ->action(function (array $data) {
                     try {
