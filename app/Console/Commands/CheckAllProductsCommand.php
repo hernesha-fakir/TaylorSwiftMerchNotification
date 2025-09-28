@@ -27,39 +27,15 @@ class CheckAllProductsCommand extends Command
     {
         $products = Product::where('is_tracked', true)->get();
 
-        if ($products->isEmpty()) {
-            $this->warn('No tracked products found.');
-            return;
-        }
-
         $this->info("Checking availability for {$products->count()} product(s)...");
 
-        $successCount = 0;
-        $failCount = 0;
 
         foreach ($products as $product) {
-            try {
-                $this->line("Checking: {$product->name}");
 
-                CheckAvailabilityForProduct::run($product);
-
-                $successCount++;
-                $this->info("✅ Success");
-
-            } catch (\Exception $e) {
-                $failCount++;
-                $this->error("❌ Failed: {$e->getMessage()}");
-            }
+            $this->line("Checking: {$product->name}");
+            CheckAvailabilityForProduct::dispatch($product);
         }
 
-        $this->newLine();
-        $this->info("Availability check completed:");
-        $this->line("✅ Successful: {$successCount}");
-        $this->line("❌ Failed: {$failCount}");
-
-        if ($failCount > 0) {
-            return Command::FAILURE;
-        }
 
         return Command::SUCCESS;
     }
