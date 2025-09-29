@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Products\Pages;
 
 use App\Actions\AvailabilityCheck\CheckAvailabilityForProduct;
 use App\Filament\Resources\Products\ProductResource;
+use App\Filament\Resources\Products\Widgets\ProductPriceChart;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
@@ -12,6 +13,13 @@ use Filament\Support\Icons\Heroicon;
 class ViewProduct extends ViewRecord
 {
     protected static string $resource = ProductResource::class;
+
+    protected function getFooterWidgets(): array
+    {
+        return [
+            ProductPriceChart::class,
+        ];
+    }
 
     protected function getHeaderActions(): array
     {

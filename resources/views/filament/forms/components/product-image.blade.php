@@ -3,7 +3,8 @@
         <img
             src="{{ $image_url }}"
             alt="{{ $product_name }}"
-            class="w-full h-64 object-cover rounded-lg shadow-sm"
+            style="max-height: 500px;"
+            class="w-auto object-cover rounded-lg shadow-sm"
         />
     </div>
 @else
