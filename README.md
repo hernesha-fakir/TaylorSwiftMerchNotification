@@ -200,6 +200,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Made with ❤️ for Taylor Swift fans by [Hernesha Fakir]()**
-
-*"It's a love story, baby just say yes" - to automated merch notifications! 🎵*
+*"It's a love story, baby just say yes" - to automated merch notifications! 💜 🎵*
