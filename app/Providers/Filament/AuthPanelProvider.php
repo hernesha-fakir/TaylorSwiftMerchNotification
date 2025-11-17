@@ -27,7 +27,7 @@ class AuthPanelProvider extends PanelProvider
             ->id('auth')
             ->path('/')
             ->domain(config('app.url'))
-            ->login()
+            ->login(\App\Filament\Pages\Auth\Login::class)
             ->registration()
             ->profile()
             ->maxContentWidth(Width::ScreenTwoExtraLarge)
