@@ -7,6 +7,7 @@ Being a big "Swiftie," I found it helpful having notifications when an item in m
 ![Laravel](https://img.shields.io/badge/Laravel-12.x-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)
 ![PHP](https://img.shields.io/badge/PHP-8.3+-777BB4?style=for-the-badge&logo=php&logoColor=white)
 ![Filament](https://img.shields.io/badge/Filament-4.x-F59E0B?style=for-the-badge&logo=laravel&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 
 ## 📋 Context & Limitations
 
@@ -14,6 +15,7 @@ Being a big "Swiftie," I found it helpful having notifications when an item in m
 
 - Laravel 12 with latest framework features
 - Filament 4.x for rapid admin panel development
+- TypeScript integration with type-safe API calls
 - Modern PHP patterns (Actions, typed properties, enums)
 - Code quality tooling (PHPStan, Laravel Pint)
 - Queue-based background processing
@@ -36,9 +38,17 @@ Being a big "Swiftie," I found it helpful having notifications when an item in m
 - **Background Processing**: Queue-based notification system
 
 ### 🎛️ Admin Dashboard
-- **Filament Admin Panel**: Modern, responsive admin interface
+- **Filament Admin Panel**: Modern, responsive admin interface with TypeScript-powered notification dropdown
+- **Real-time Notifications**: Bell icon with live unread count badge in top navigation
 - **Availability History**: Complete table of all availability checks with filters
 - **Real-time Data**: Latest stock status and pricing information
+
+### 🔔 TypeScript Notification System
+- **Type-Safe API Integration**: Fully typed REST API endpoints with TypeScript interfaces
+- **Real-time Badge Updates**: Purple notification badge shows unread count
+- **Smart Notifications**: Different icons for stock availability vs price changes
+- **Interactive Dropdown**: Mark as read, pagination support, responsive design
+- **Type Guards**: Runtime type checking for different notification types
 
 
 ## 🚀 Quick Start
@@ -85,11 +95,37 @@ MAIL_USERNAME=your_mailtrap_username
 MAIL_PASSWORD=your_mailtrap_password
 ```
 
-6. **Create admin user**
+6. **Install Node dependencies and build assets**
+```bash
+npm install
+npm run build
+```
+
+7. **Create admin user**
 ```bash
 php artisan make:filament-user
 ```
+
+8. **Start the development server**
+```bash
+php artisan serve
+```
+
+Visit `http://localhost:8000/admin` and login with your admin credentials.
+
 ## 🛠️ Development
+
+### Frontend Development
+
+The project uses TypeScript with Vite for frontend asset compilation:
+
+```bash
+# Development mode with hot reload
+npm run dev
+
+# Production build
+npm run build
+```
 
 ### Code Quality Tools
 
@@ -113,6 +149,7 @@ composer analyze
 
 #### Key Components
 
+**Backend (PHP/Laravel)**
 - **Models**
   - `Product`: Tracked merchandise items
   - `AvailabilityCheck`: Historical availability and pricing data
@@ -127,6 +164,21 @@ composer analyze
 - **Notifications**
   - `StockAvailableNotification`: Stock availability alerts
   - `PriceChangedNotification`: Price change alerts
+
+- **API Controllers**
+  - `NotificationController`: REST API for notification fetching and management
+
+**Frontend (TypeScript)**
+- **Components**
+  - `NotificationDropdown`: Main notification UI component with type-safe state management
+
+- **API Layer**
+  - `notifications.ts`: Type-safe API calls with Axios
+
+- **Type Definitions**
+  - `notifications.ts`: Comprehensive TypeScript interfaces for all notification types
+  - Type guards for runtime type safety
+  - Generic types for flexible, reusable code
 
 - **Widgets**
   - `AvailabilityChecksTableWidget`: Main dashboard table
@@ -153,6 +205,15 @@ Shopify stores prices in cents (e.g., $29.99 is stored as 2999). The application
 $price = $selectedVariant['price'] / 100; // 2999 becomes 29.99
 ```
 This ensures accurate price comparisons and proper display formatting while maintaining precision in monetary calculations.
+
+**TypeScript Integration**
+The notification system demonstrates modern TypeScript patterns:
+- **Type-safe API calls**: All API responses are typed with TypeScript interfaces
+- **Generic types**: `LaravelNotification<T>` adapts to different notification data types
+- **Type guards**: Runtime type checking with compile-time safety (`isStockAvailableNotification()`)
+- **Union types**: Strict string literals for type safety (`'increase' | 'decrease'`)
+
+This approach catches errors at compile time (e.g., API contract mismatches) and provides excellent developer experience with autocomplete and inline documentation.
 
 
 ## 🔧 Troubleshooting

@@ -11,6 +11,7 @@ use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\Support\Enums\Width;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -45,6 +46,10 @@ class AuthPanelProvider extends PanelProvider
             ->widgets([
                 \App\Filament\Widgets\AvailabilityChecksTableWidget::class,
             ])
+            ->renderHook(
+                PanelsRenderHook::USER_MENU_BEFORE,
+                fn (): string => view('filament.components.notification-dropdown')->render()
+            )
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
