@@ -51,9 +51,10 @@ class StockAvailableNotification extends Notification implements ShouldQueue
     public function toArray(object $notifiable): array
     {
         return [
+            'type' => 'stock_available', // Discriminant for TypeScript union
             'product_id' => $this->product->id,
             'product_name' => $this->product->name,
-            'product_price' => $this->product->price,
+            'product_price' => (float) $this->product->price, // Ensure numeric type
             'product_url' => $this->productUrl,
             'message' => "The item '{$this->product->name}' is now back in stock!",
         ];

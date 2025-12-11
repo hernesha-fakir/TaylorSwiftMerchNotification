@@ -1,6 +1,7 @@
 import { fetchNotifications, markNotificationAsRead } from '@/api/notifications';
 import type {
   AppNotification,
+  LaravelNotification,
   StockAvailableNotificationData,
   PriceChangedNotificationData,
 } from '@/types/notifications';
@@ -13,8 +14,10 @@ export class NotificationDropdown {
   private container: HTMLElement;
   private notifications: AppNotification[] = [];
   private isOpen: boolean = false;
-  private currentPage: number = 1;
-  private hasMorePages: boolean = true;
+  private isLoading: boolean = false;
+  private error: Error | null = null;
+  private outsideClickHandler: (event: MouseEvent) => void;
+  private containerClickHandler: (event: MouseEvent) => void;
 
   constructor(containerId: string) {
     const element = document.getElementById(containerId);
@@ -22,6 +25,11 @@ export class NotificationDropdown {
       throw new Error(`Container element with id "${containerId}" not found`);
     }
     this.container = element;
+
+    // Bind event handlers to maintain 'this' context
+    this.outsideClickHandler = this.handleOutsideClick.bind(this);
+    this.containerClickHandler = this.handleContainerClick.bind(this);
+
     this.init();
   }
 
@@ -36,31 +44,39 @@ export class NotificationDropdown {
   /**
    * Load notifications from the API
    */
-  private async loadNotifications(page: number = 1): Promise<void> {
-    try {
-      const response = await fetchNotifications(page);
+  private async loadNotifications(): Promise<void> {
+    this.isLoading = true;
+    this.error = null;
+    this.render(); // Show loading state
 
+    try {
+      const response = await fetchNotifications(1);
       this.notifications = response.data;
-      this.currentPage = response.current_page;
-      this.hasMorePages = response.current_page < response.last_page;
-      this.render();
+      this.error = null;
     } catch (error) {
       console.error('Failed to load notifications:', error);
-      this.renderError();
+      this.error = error as Error;
+    } finally {
+      this.isLoading = false;
+      this.render(); // Show final state (success or error)
     }
   }
 
   /**
-   * Mark a notification as read
+   * Mark a notification as read (using immutable update pattern)
    */
   private async markAsRead(notificationId: string): Promise<void> {
     try {
       await markNotificationAsRead(notificationId);
-      const notification = this.notifications.find((n) => n.id === notificationId);
-      if (notification) {
-        notification.read_at = new Date().toISOString();
-        this.render();
-      }
+
+      // Immutable update: create new array with updated notification
+      this.notifications = this.notifications.map((notification) =>
+        notification.id === notificationId
+          ? { ...notification, read_at: new Date().toISOString() }
+          : notification
+      );
+
+      this.render();
     } catch (error) {
       console.error('Failed to mark notification as read:', error);
     }
@@ -75,15 +91,40 @@ export class NotificationDropdown {
   }
 
   /**
-   * Format notification data based on type
+   * Format notification data based on type (using discriminated union)
    */
   private formatNotification(notification: AppNotification): string {
     const isRead = notification.read_at !== null;
     const readClass = isRead ? 'opacity-60' : '';
 
-    // Type guard for stock available notification
-    if (this.isStockAvailableNotification(notification.data)) {
-      return `
+    // Use discriminated union for automatic type narrowing
+    switch (notification.data.type) {
+      case 'stock_available':
+        return this.formatStockAvailableNotification(
+          notification as LaravelNotification<StockAvailableNotificationData>,
+          isRead,
+          readClass
+        );
+      case 'price_changed':
+        return this.formatPriceChangedNotification(
+          notification as LaravelNotification<PriceChangedNotificationData>,
+          isRead,
+          readClass
+        );
+      default:
+        return this.formatUnknownNotification(readClass);
+    }
+  }
+
+  /**
+   * Format stock available notification
+   */
+  private formatStockAvailableNotification(
+    notification: LaravelNotification<StockAvailableNotificationData>,
+    isRead: boolean,
+    readClass: string
+  ): string {
+    return `
         <div class="fi-dropdown-list-item flex cursor-pointer gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-white/5 ${readClass}" data-notification-id="${notification.id}" style="overflow: hidden;">
           <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-success-50 dark:bg-success-400/10">
             <svg class="h-5 w-5 text-success-600 dark:text-success-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -94,7 +135,7 @@ export class NotificationDropdown {
             <p class="text-sm font-medium text-gray-950 dark:text-white" style="overflow-wrap: anywhere; word-break: break-word; white-space: normal;">${notification.data.product_name}</p>
             <p class="text-xs text-gray-500 dark:text-gray-400" style="overflow-wrap: anywhere; word-break: break-word; white-space: normal; max-width: 100%;">${notification.data.message}</p>
             <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-              <span>Price: $${notification.data.product_price}</span>
+              <span>Price: $${notification.data.product_price.toFixed(2)}</span>
               <span>•</span>
               <span>${this.formatDate(notification.created_at)}</span>
             </div>
@@ -102,37 +143,46 @@ export class NotificationDropdown {
           ${!isRead ? '<div class="h-2 w-2 flex-shrink-0 rounded-full bg-primary-600 dark:bg-primary-400"></div>' : ''}
         </div>
       `;
-    }
+  }
 
-    // Type guard for price changed notification
-    if (this.isPriceChangedNotification(notification.data)) {
-      const isIncrease = notification.data.price_change_type === 'increase';
-      const iconColor = isIncrease ? 'text-warning-600 dark:text-warning-400' : 'text-success-600 dark:text-success-400';
-      const bgColor = isIncrease ? 'bg-warning-50 dark:bg-warning-400/10' : 'bg-success-50 dark:bg-success-400/10';
+  /**
+   * Format price changed notification
+   */
+  private formatPriceChangedNotification(
+    notification: LaravelNotification<PriceChangedNotificationData>,
+    isRead: boolean,
+    readClass: string
+  ): string {
+    const isIncrease = notification.data.price_change_type === 'increase';
+    const iconColor = isIncrease ? 'text-warning-600 dark:text-warning-400' : 'text-success-600 dark:text-success-400';
+    const bgColor = isIncrease ? 'bg-warning-50 dark:bg-warning-400/10' : 'bg-success-50 dark:bg-success-400/10';
 
-      return `
-        <div class="fi-dropdown-list-item flex cursor-pointer gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-white/5 ${readClass}" data-notification-id="${notification.id}" style="overflow: hidden;">
-          <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${bgColor}">
-            <svg class="h-5 w-5 ${iconColor}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-              ${isIncrease
-                ? '<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />'
-                : '<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6L9 12.75l4.286-4.286a11.948 11.948 0 014.306 6.43l.776 2.898m0 0l3.182-5.511m-3.182 5.51l-5.511-3.181" />'
-              }
-            </svg>
-          </div>
-          <div class="flex-1 min-w-0 space-y-1" style="max-width: 100%;">
-            <p class="text-sm font-medium text-gray-950 dark:text-white" style="overflow-wrap: anywhere; word-break: break-word; white-space: normal;">${notification.data.product_name}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400" style="overflow-wrap: anywhere; word-break: break-word; white-space: normal; max-width: 100%;">${notification.data.message}</p>
-            <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-              <span>${this.formatDate(notification.created_at)}</span>
-            </div>
-          </div>
-          ${!isRead ? '<div class="h-2 w-2 flex-shrink-0 rounded-full bg-primary-600 dark:bg-primary-400"></div>' : ''}
+    return `
+      <div class="fi-dropdown-list-item flex cursor-pointer gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-white/5 ${readClass}" data-notification-id="${notification.id}" style="overflow: hidden;">
+        <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${bgColor}">
+          <svg class="h-5 w-5 ${iconColor}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            ${isIncrease
+              ? '<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />'
+              : '<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6L9 12.75l4.286-4.286a11.948 11.948 0 014.306 6.43l.776 2.898m0 0l3.182-5.511m-3.182 5.51l-5.511-3.181" />'
+            }
+          </svg>
         </div>
-      `;
-    }
+        <div class="flex-1 min-w-0 space-y-1" style="max-width: 100%;">
+          <p class="text-sm font-medium text-gray-950 dark:text-white" style="overflow-wrap: anywhere; word-break: break-word; white-space: normal;">${notification.data.product_name}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400" style="overflow-wrap: anywhere; word-break: break-word; white-space: normal; max-width: 100%;">${notification.data.message}</p>
+          <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+            <span>${this.formatDate(notification.created_at)}</span>
+          </div>
+        </div>
+        ${!isRead ? '<div class="h-2 w-2 flex-shrink-0 rounded-full bg-primary-600 dark:bg-primary-400"></div>' : ''}
+      </div>
+    `;
+  }
 
-    // Fallback for unknown notification types
+  /**
+   * Format unknown notification type
+   */
+  private formatUnknownNotification(readClass: string): string {
     return `
       <div class="fi-dropdown-list-item px-4 py-3 ${readClass}">
         <p class="text-sm text-gray-500 dark:text-gray-400">Unknown notification type</p>
@@ -140,34 +190,7 @@ export class NotificationDropdown {
     `;
   }
 
-  /**
-   * Type guard for StockAvailableNotificationData
-   */
-  private isStockAvailableNotification(
-    data: unknown
-  ): data is StockAvailableNotificationData {
-    return (
-      typeof data === 'object' &&
-      data !== null &&
-      'product_price' in data &&
-      'message' in data
-    );
-  }
-
-  /**
-   * Type guard for PriceChangedNotificationData
-   */
-  private isPriceChangedNotification(
-    data: unknown
-  ): data is PriceChangedNotificationData {
-    return (
-      typeof data === 'object' &&
-      data !== null &&
-      'old_price' in data &&
-      'new_price' in data &&
-      'price_change_type' in data
-    );
-  }
+  // Note: Type guards removed - discriminated unions handle type narrowing automatically
 
   /**
    * Format date to relative time
@@ -218,22 +241,15 @@ export class NotificationDropdown {
             </div>
 
             <div class="fi-dropdown-list max-h-96 overflow-y-auto divide-y divide-gray-200 dark:divide-white/5">
-              ${this.notifications.length > 0
+              ${this.isLoading
+                ? this.renderLoadingSkeleton()
+                : this.error
+                ? this.renderErrorMessage()
+                : this.notifications.length > 0
                 ? this.notifications.map((n) => this.formatNotification(n)).join('')
                 : '<div class="p-4 text-center text-sm text-gray-500 dark:text-gray-400">No notifications</div>'
               }
             </div>
-
-            ${this.hasMorePages ? `
-              <div class="border-t border-gray-200 px-4 py-3 dark:border-white/10">
-                <button
-                  id="load-more-notifications"
-                  class="fi-link group/link relative inline-flex items-center justify-center gap-1 text-sm font-semibold outline-none transition duration-75 hover:underline focus-visible:underline text-primary-600 dark:text-primary-400"
-                >
-                  Load more
-                </button>
-              </div>
-            ` : ''}
           </div>
         ` : ''}
       </div>
@@ -243,77 +259,128 @@ export class NotificationDropdown {
   }
 
   /**
-   * Render error state
+   * Render loading skeleton
    */
-  private renderError(): void {
-    this.container.innerHTML = `
-      <div class="relative">
-        <button class="p-2 text-red-600" disabled>
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  private renderLoadingSkeleton(): string {
+    return `
+      <div class="p-4 space-y-4">
+        ${[1, 2, 3].map(() => `
+          <div class="flex gap-3 animate-pulse">
+            <div class="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700"></div>
+            <div class="flex-1 space-y-2">
+              <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+              <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  /**
+   * Render error message with retry button
+   */
+  private renderErrorMessage(): string {
+    return `
+      <div class="p-6 text-center space-y-3">
+        <div class="flex justify-center">
+          <svg class="h-12 w-12 text-red-500 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
+        </div>
+        <div>
+          <p class="text-sm font-medium text-gray-900 dark:text-white">Failed to load notifications</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">${this.error?.message || 'Unknown error'}</p>
+        </div>
+        <button
+          id="retry-notifications"
+          class="fi-link group/link relative inline-flex items-center justify-center gap-1 text-sm font-semibold outline-none transition duration-75 hover:underline focus-visible:underline text-primary-600 dark:text-primary-400"
+        >
+          Try again
         </button>
       </div>
     `;
   }
 
   /**
-   * Attach event listeners using event delegation to avoid duplicates
+   * Handle clicks within the container (event delegation)
+   */
+  private handleContainerClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+
+    // Check if clicked on toggle button or its children
+    const toggleButton = target.closest('#notification-toggle');
+    if (toggleButton) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.toggleDropdown();
+      return;
+    }
+
+    // Check if clicked on a notification item
+    const notificationItem = target.closest('[data-notification-id]');
+    if (notificationItem) {
+      event.preventDefault();
+      event.stopPropagation();
+      const notificationId = notificationItem.getAttribute('data-notification-id');
+      if (notificationId) {
+        this.markAsRead(notificationId);
+      }
+      return;
+    }
+
+    // Check if clicked on retry button
+    if (target.id === 'retry-notifications' || target.closest('#retry-notifications')) {
+      event.preventDefault();
+      this.loadNotifications();
+      return;
+    }
+  }
+
+  /**
+   * Handle clicks outside the dropdown to close it
+   */
+  private handleOutsideClick(event: MouseEvent): void {
+    if (!this.container.contains(event.target as Node) && this.isOpen) {
+      this.isOpen = false;
+      this.render();
+    }
+  }
+
+  /**
+   * Attach event listeners
    */
   private attachEventListeners(): void {
-    // Remove old listeners by cloning and replacing the container content
-    // But we'll use event delegation on the container instead to avoid this issue
+    // Remove old listeners before attaching new ones
+    this.container.removeEventListener('click', this.containerClickHandler);
+    document.removeEventListener('click', this.outsideClickHandler);
 
-    // Use event delegation on the container for all clicks
-    this.container.onclick = (event) => {
-      const target = event.target as HTMLElement;
+    // Attach listeners
+    this.container.addEventListener('click', this.containerClickHandler);
+    document.addEventListener('click', this.outsideClickHandler);
+  }
 
-      // Check if clicked on toggle button or its children
-      const toggleButton = target.closest('#notification-toggle');
-      if (toggleButton) {
-        event.preventDefault();
-        event.stopPropagation();
-        this.toggleDropdown();
-        return;
-      }
+  /**
+   * Clean up resources and remove event listeners
+   * Call this when destroying the component
+   */
+  public destroy(): void {
+    // Remove event listeners
+    this.container.removeEventListener('click', this.containerClickHandler);
+    document.removeEventListener('click', this.outsideClickHandler);
 
-      // Check if clicked on a notification item
-      const notificationItem = target.closest('[data-notification-id]');
-      if (notificationItem) {
-        event.preventDefault();
-        event.stopPropagation();
-        const notificationId = notificationItem.getAttribute('data-notification-id');
-        if (notificationId) {
-          this.markAsRead(notificationId);
-        }
-        return;
-      }
+    // Clear container
+    this.container.innerHTML = '';
 
-      // Check if clicked on load more button
-      if (target.id === 'load-more-notifications' || target.closest('#load-more-notifications')) {
-        event.preventDefault();
-        this.loadNotifications(this.currentPage + 1);
-        return;
-      }
-    };
-
-    // Close dropdown when clicking outside (only attach once)
-    if (!this.container.dataset.outsideClickAttached) {
-      this.container.dataset.outsideClickAttached = 'true';
-      document.addEventListener('click', (event) => {
-        if (!this.container.contains(event.target as Node) && this.isOpen) {
-          this.isOpen = false;
-          this.render();
-        }
-      });
-    }
+    // Clear notifications array
+    this.notifications = [];
   }
 
   /**
    * Public method to refresh notifications
    */
   public refresh(): void {
-    this.loadNotifications(1);
+    this.loadNotifications();
   }
 }

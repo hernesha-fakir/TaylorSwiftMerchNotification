@@ -58,12 +58,13 @@ class PriceChangedNotification extends Notification implements ShouldQueue
     public function toArray(object $notifiable): array
     {
         return [
+            'type' => 'price_changed', // Discriminant for TypeScript union
             'product_id' => $this->product->id,
             'product_name' => $this->product->name,
             'product_url' => $this->productUrl,
-            'old_price' => $this->oldPrice,
-            'new_price' => $this->newPrice,
-            'price_difference' => abs($this->newPrice - $this->oldPrice),
+            'old_price' => (float) $this->oldPrice,
+            'new_price' => (float) $this->newPrice,
+            'price_difference' => (float) abs($this->newPrice - $this->oldPrice),
             'price_change_type' => $this->newPrice > $this->oldPrice ? 'increase' : 'decrease',
             'message' => 'Price '.($this->newPrice > $this->oldPrice ? 'increased' : 'decreased').' from $'.number_format($this->oldPrice, 2).' to $'.number_format($this->newPrice, 2),
         ];
